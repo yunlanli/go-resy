@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/lgrees/resy-cli/internal/book"
+	"github.com/lgrees/resy-cli/internal/utils/date"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +14,6 @@ var bookCmd = &cobra.Command{
 	Generally, users of resy-cli should schedule a booking using "resy schedule".
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// var bookingDetails book.BookingDetails
 
 		flags := cmd.Flags()
 
@@ -26,12 +26,23 @@ var bookCmd = &cobra.Command{
 		dryRun, _ := flags.GetBool("dryRun")
 		wait, _ := flags.GetBool("wait")
 
+		timeRanges := []date.TimeRange{}
+		for _, timeRangeStr := range reservationTimes {
+			timeRange, err := date.ParseTimeRange(timeRangeStr)
+
+			if err != nil {
+				return err
+			}
+
+			timeRanges = append(timeRanges, *timeRange)
+		}
+
 		bookingDetails := &book.BookingDetails{
 			VenueId:          venueId,
 			PartySize:        partySize,
 			BookingDateTime:  bookingDateTime,
 			ReservationDate:  reservationDate,
-			ReservationTimes: reservationTimes,
+			ReservationTimes: timeRanges,
 			ReservationTypes: reservationTypes,
 		}
 
@@ -54,7 +65,7 @@ func init() {
 
 	flags.String("venueId", "", "The venue id of the restaurant")
 	flags.Bool("dryRun", false, "When true, skips booking")
-	flags.Bool("wait", true, "When true, waits for bookingDateTime to book")
+	flags.Bool("wait", false, "When true, waits for bookingDateTime to book")
 	flags.String("partySize", "", "The party size for the reservation")
 	flags.String("bookingDateTime", "", "The time when the reservation should be booked")
 	flags.String("reservationDate", "", "The date of the reservation")

@@ -34,7 +34,18 @@ func Add(s string) error {
 
 func schedule(inputs *Inputs) error {
 	types := strings.Split(inputs.ReservationTypes, "\n")
-	times := strings.Split(inputs.ReservationTimes, "\n")
+	timeStrs := strings.Split(inputs.ReservationTimes, "\n")
+
+	var times []date.TimeRange
+	for _, timeStr := range timeStrs {
+		timeRange, err := date.ParseTimeRange(timeStr)
+
+		if err != nil {
+			return err
+		}
+
+		times = append(times, *timeRange)
+	}
 
 	bookCmd := book.ToBookCmd(&book.BookingDetails{
 		ReservationDate:  inputs.ReservationDate,
@@ -73,7 +84,7 @@ var questions = []*survey.Question{
 	},
 	{
 		Name:     "reservationTimes",
-		Prompt:   &survey.Multiline{Message: "Reservation Times (HH:MM:SS):"},
+		Prompt:   &survey.Multiline{Message: "Reservation Time Ranges (HH:MM:SS - HH:MM:SS):"},
 		Validate: survey.Required,
 	},
 	{

@@ -21,8 +21,8 @@ type BookingDetails struct {
 	PartySize       string
 	// YYYY-MM-DD
 	ReservationDate string
-	// HH:MM:SS
-	ReservationTimes []string
+	// HH:MM:SS - HH:MM:SS
+	ReservationTimes []date.TimeRange
 	ReservationTypes []string
 }
 
@@ -70,10 +70,15 @@ func ToBookCmd(bookingDetails *BookingDetails, dryRun bool) string {
 	}
 
 	types := strings.Join(resTypes, ",")
-	times := strings.Join(bookingDetails.ReservationTimes, ",")
+
+	resTimes := make([]string, 0)
+	for _, timeRange := range bookingDetails.ReservationTimes {
+		resTimes = append(resTimes, timeRange.ToString())
+	}
+	times := strings.Join(resTimes, ",")
 	resyExec, _ := os.Executable()
 
-	return fmt.Sprintf("%s book --bookingDateTime='%s' --venueId=%s --partySize=%s --reservationDate=%s --reservationTimes=%s --reservationTypes=%s --dryRun=%t --wait", resyExec, bookingDetails.BookingDateTime, bookingDetails.VenueId, bookingDetails.PartySize, bookingDetails.ReservationDate, times, types, dryRun)
+	return fmt.Sprintf("%s book --bookingDateTime='%s' --venueId=%s --partySize=%s --reservationDate=%s --reservationTimes='%s' --reservationTypes=%s --dryRun=%t --wait true", resyExec, bookingDetails.BookingDateTime, bookingDetails.VenueId, bookingDetails.PartySize, bookingDetails.ReservationDate, times, types, dryRun)
 }
 
 func Book(bookingDetails *BookingDetails, dryRun bool) error {
@@ -221,7 +226,7 @@ func isSlotMatch(bookingDetails *BookingDetails, slot Slot) bool {
 	isTimeMatch := false
 
 	for _, time := range bookingDetails.ReservationTimes {
-		if time == slotTime {
+		if slotTime >= time.Start && slotTime <= time.End {
 			isTimeMatch = true
 			break
 		}
