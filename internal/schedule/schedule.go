@@ -56,11 +56,16 @@ func schedule(inputs *Inputs) error {
 		VenueId:          inputs.VenueId,
 	}, inputs.DryRun)
 
+	fmt.Printf("bookCmd struct created successfully: %v\n", bookCmd)
+
 	t, _ := date.ParseDateTime(inputs.BookingDateTime)
 	bookTime := t.Add(-time.Minute) // Job should execute slightly before desired book time (at is not terribly reliable here)
 
 	atCmd := fmt.Sprintf("at %s", date.ToAtString(&bookTime))
+	fmt.Printf("atCmd: %v\n", atCmd)
+
 	cmd := fmt.Sprintf("echo \"%s\" | %s", bookCmd, atCmd)
+	fmt.Printf("resy-cli cmd: %v\n", cmd)
 	_, err := exec.Command("sh", "-c", cmd).Output()
 
 	return err

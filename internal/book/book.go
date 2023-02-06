@@ -92,6 +92,7 @@ func Book(bookingDetails *BookingDetails, dryRun bool) error {
 		return errors.New("no matching slots")
 	}
 	if dryRun {
+		fmt.Printf("matching slots: %v\n", matchingSlots)
 		return nil
 	}
 
@@ -132,6 +133,8 @@ func fetchSlots(bookingDetails *BookingDetails) ([]Slot, error) {
 	}
 	if statusCode != 200 {
 		return nil, fmt.Errorf("failed to fetch slots for date, status code: %d", statusCode)
+	} else {
+		fmt.Printf("fetchSlots succeeded.\n")
 	}
 
 	var obj FindResponse
@@ -153,14 +156,19 @@ func findMatches(bookingDetails *BookingDetails, slots []Slot) (matches []Slot) 
 }
 
 func book(bookingDetails *BookingDetails, matchingSlots []Slot) error {
+	var err error
 	for _, slot := range matchingSlots {
-		err := bookSlot(bookingDetails, slot)
+		fmt.Printf("booking %v", slot)
+		err = bookSlot(bookingDetails, slot)
 		if err == nil {
+			fmt.Printf("...OK\n")
 			return nil
+		} else {
+			fmt.Printf("...FAILED	%v\n", err)
 		}
 	}
 
-	return errors.New("could not book any matching slots")
+	return fmt.Errorf("could not book any matching slots: %w", err)
 }
 
 func bookSlot(bookingDetails *BookingDetails, slot Slot) error {
@@ -175,12 +183,24 @@ func bookSlot(bookingDetails *BookingDetails, slot Slot) error {
 	if err != nil {
 		return err
 	}
+
+	stringifyResponse := func(resp []byte) string {
+		if resp == nil {
+			return "[EMPTY RESPONSE]"
+		}
+
+		return string(resp)
+	}
+
 	responseBody, statusCode, err := http.PostJSON("https://api.resy.com/3/details", &http.Req{Body: body})
 	if err != nil {
 		return err
 	}
 	if statusCode >= 400 || responseBody == nil {
-		return fmt.Errorf("failed to get booking details, status code: %d", statusCode)
+		return fmt.Errorf(
+			"failed to get booking details, status code: %d, msg: %v",
+			statusCode,
+			stringifyResponse(responseBody))
 	}
 
 	var details DetailsResponse
@@ -204,12 +224,15 @@ func bookSlot(bookingDetails *BookingDetails, slot Slot) error {
 	} else {
 		form = token
 	}
-	_, statusCode, err = http.PostForm("https://api.resy.com/3/book", &http.Req{Body: []byte(form)})
+	responseBody, statusCode, err = http.PostForm("https://api.resy.com/3/book", &http.Req{Body: []byte(form)})
 	if err != nil {
 		return err
 	}
 	if statusCode >= 400 {
-		return fmt.Errorf("failed to book reservation, status code: %d", statusCode)
+		return fmt.Errorf(
+			"failed to book reservation, status code: %d, msg: %v",
+			statusCode,
+			stringifyResponse(responseBody))
 	}
 
 	return nil
