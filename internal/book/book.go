@@ -216,15 +216,23 @@ func bookSlot(bookingDetails *BookingDetails, slot Slot) error {
 			}{Id: details.User.PaymentMethods[0].Id})
 			paymentDetails = fmt.Sprintf("struct_payment_method=%s", url.PathEscape(string(body)))
 		}
+	} else {
+		fmt.Println("[ Warn ] user account has no payment method.")
 	}
+	sourceId := url.PathEscape("source_id=resy.com-venue-details")
 
 	var form string
 	if paymentDetails != "" {
-		form = strings.Join([]string{token, paymentDetails}, "&")
+		form = strings.Join([]string{token, paymentDetails, sourceId}, "&")
 	} else {
 		form = token
 	}
-	responseBody, statusCode, err = http.PostForm("https://api.resy.com/3/book", &http.Req{Body: []byte(form)})
+	responseBody, statusCode, err = http.PostForm(
+		"https://api.resy.com/3/book",
+		&http.Req{Body: []byte(form)},
+		&map[string]string{
+			"referer": "https://wdigets.resy.com/",
+		})
 	if err != nil {
 		return err
 	}

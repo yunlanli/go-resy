@@ -26,8 +26,8 @@ type Req struct {
 	Body        []byte
 }
 
-func template(method string, contentType string) func(string, *Req) ([]byte, int, error) {
-	return func(url string, p *Req) ([]byte, int, error) {
+func template(method string, contentType string) func(string, *Req, *map[string]string) ([]byte, int, error) {
+	return func(url string, p *Req, headers *map[string]string) ([]byte, int, error) {
 		req, _ := http.NewRequest(method, url, bytes.NewReader(p.Body))
 		client := &http.Client{Timeout: constants.HttpReqTimeout * time.Second}
 		authHeaders := getAuthHeaders()
@@ -37,6 +37,13 @@ func template(method string, contentType string) func(string, *Req) ([]byte, int
 		for key, val := range *authHeaders {
 			req.Header.Add(key, val[0])
 		}
+
+		if headers != nil {
+			for key, val := range *headers {
+				req.Header.Add(key, val)
+			}
+		}
+
 		if p.QueryParams != nil {
 			query := req.URL.Query()
 			for key, val := range p.QueryParams {
@@ -66,13 +73,14 @@ func template(method string, contentType string) func(string, *Req) ([]byte, int
 }
 
 func PostJSON(url string, p *Req) ([]byte, int, error) {
-	return template(http.MethodPost, "application/json")(url, p)
+	return template(http.MethodPost, "application/json")(url, p, nil)
 }
 
-func PostForm(url string, p *Req) ([]byte, int, error) {
-	return template(http.MethodPost, "application/x-www-form-urlencoded")(url, p)
+func PostForm(url string, p *Req, headers *map[string]string) ([]byte, int, error) {
+	return template(http.MethodPost, "application/x-www-form-urlencoded")(
+		url, p, headers)
 }
 
 func Get(url string, p *Req) ([]byte, int, error) {
-	return template(http.MethodGet, "")(url, p)
+	return template(http.MethodGet, "")(url, p, nil)
 }
