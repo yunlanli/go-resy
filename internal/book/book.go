@@ -231,7 +231,11 @@ func bookSlot(bookingDetails *BookingDetails, slot Slot) error {
 		"https://api.resy.com/3/book",
 		&http.Req{Body: []byte(form)},
 		&map[string]string{
+                        "host": "api.resy.com",
+                        "origin": "https://widgets.resy.com",
 			"referer": "https://wdigets.resy.com/",
+                        "x-origin": "https://widgets.resy.com",
+                        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/111.0",
 		})
 	if err != nil {
 		return err
